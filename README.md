@@ -42,9 +42,13 @@ Ensure you have the following installed:
    ```sh
    pip install -r requirements.txt
 
+
 4. **Configure the Database**
    ```sh
     The database setup is in a separate repository. Follow its README for setting up PostgreSQL.    
+   https://github.com/BenDowswell/Database
+
+   The database setup is in a separate repository. Follow its README for setting up PostgreSQ
     Create a .env file (if needed) or update config.py with your database credentials:
     
     DATABASE_URL=postgresql://username:password@localhost:5432/yourdbname
