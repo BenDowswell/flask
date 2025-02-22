@@ -28,7 +28,7 @@ Ensure you have the following installed:
 
 1. **Clone the Repository**
    ```sh
-   git clone https://github.com/yourusername/your-flask-repo.git
+   git clone git@github.com:BenDowswell/flask.git
    cd your-flask-repo
 
 2. **Create a Virtual Environment**
