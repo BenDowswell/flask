@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Recipe App{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <!-- Brand -->
+      <a class="navbar-brand" href="{{ url_for('home') }}">Recipe App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+              aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <!-- Left side: Home, Recipes, Ingredients -->
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+          </li>
+          <!-- Recipes Section -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="recipesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Recipes
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="recipesDropdown">
+              {% if current_user %}
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addRecipeModal">Add Recipe</a></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeRecipeModal">Remove Recipe</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{{ url_for('view_recipes') }}">View Recipes</a></li>
+            </ul>
+          </li>
+          <!-- Ingredients Section -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="ingredientsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Ingredients
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="ingredientsDropdown">
+              {% if current_user %}
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addIngredientModal">Add Ingredient</a></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeIngredientModal">Remove Ingredient</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{{ url_for('view_ingredients') }}">View Ingredients</a></li>
+            </ul>
+          </li>
+        </ul>
+        <!-- Right side: Account -->
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Account
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="accountDropdown">
+              {% if current_user %}
+                <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+              {% else %}
+                <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
+              {% endif %}
+            </ul>
+          </li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div>
+  </nav>
+
+  {% if current_user %}
+  <!-- Add Recipe Modal -->
+  <div class="modal fade" id="addRecipeModal" tabindex="-1" aria-labelledby="addRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('add_recipe') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addRecipeModalLabel">Add Recipe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Recipe Name -->
+            <div class="mb-3">
+              <label for="recipeName" class="form-label">Recipe Name</label>
+              <input type="text" class="form-control" id="recipeName" name="name" required>
+            </div>
+            <!-- Recipe Steps -->
+            <div class="mb-3">
+              <label class="form-label">Recipe Steps</label>
+              <div id="stepsContainer">
+                <div class="mb-2">
+                  <input type="text" class="form-control" name="steps[]" placeholder="Step description" required>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="addStepBtn">Add Another Step</button>
+            </div>
+            <!-- Recipe Ingredients -->
+            <div class="mb-3">
+              <label class="form-label">Ingredients</label>
+              <div id="ingredientsContainer">
+                <div class="row mb-2 ingredient-row">
+                  <div class="col">
+                    <select class="form-select" name="ingredient_ids[]" required>
+                      <option value="">Select Ingredient</option>
+                      {% for ingredient in ingredients %}
+                        <option value="{{ ingredient.id }}">{{ ingredient.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col">
+                    <input type="text" class="form-control" name="ingredient_quantities[]" placeholder="Quantity" required>
+                  </div>
+                  <div class="col-auto">
+                    <button type="button" class="btn btn-danger remove-ingredient-btn">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="addIngredientBtn">Add Another Ingredient</button>
+            </div>
+            <!-- Hidden User Field -->
+            <input type="hidden" name="user_id" value="{{ user_id }}">
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Add Recipe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Recipe Modal -->
+  <div class="modal fade" id="removeRecipeModal" tabindex="-1" aria-labelledby="removeRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('remove_recipe') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="removeRecipeModalLabel">Remove Recipe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="recipeSelect" class="form-label">Select Recipe</label>
+              <select class="form-select" id="recipeSelect" name="recipe_id" required>
+                {% for recipe in recipes %}
+                  <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">Delete Recipe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Ingredient Modal -->
+  <div class="modal fade" id="addIngredientModal" tabindex="-1" aria-labelledby="addIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('add_ingredient') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addIngredientModalLabel">Add Ingredient</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="ingredientName" class="form-label">Ingredient Name</label>
+              <input type="text" class="form-control" id="ingredientName" name="name" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Add Ingredient</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Ingredient Modal -->
+  <div class="modal fade" id="removeIngredientModal" tabindex="-1" aria-labelledby="removeIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('remove_ingredient') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="removeIngredientModalLabel">Remove Ingredient</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="ingredientSelect" class="form-label">Select Ingredient</label>
+              <select class="form-select" id="ingredientSelect" name="ingredient_id" required>
+                {% for ingredient in ingredients %}
+                  <option value="{{ ingredient.id }}">{{ ingredient.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">Delete Ingredient</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main Content Area -->
+  <div class="container mt-4">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Dynamically add recipe step input fields by cloning the first step input
+    document.getElementById('addStepBtn').addEventListener('click', function() {
+      var container = document.getElementById('stepsContainer');
+      var firstStep = container.querySelector('input[name="steps[]"]');
+      if (firstStep) {
+        var clone = firstStep.cloneNode(true);
+        clone.value = "";
+        container.appendChild(clone);
+      }
+    });
+
+    // Dynamically add ingredient rows by cloning the first row
+    document.getElementById('addIngredientBtn').addEventListener('click', function() {
+      var container = document.getElementById('ingredientsContainer');
+      var firstRow = container.querySelector('.ingredient-row');
+      if (firstRow) {
+        var clone = firstRow.cloneNode(true);
+        // Reset the select and input values
+        var select = clone.querySelector('select');
+        if (select) {
+          select.selectedIndex = 0;
+        }
+        var input = clone.querySelector('input[type="text"]');
+        if (input) {
+          input.value = "";
+        }
+        container.appendChild(clone);
+      }
+    });
+
+    // Dynamically remove an ingredient row when "Remove" is clicked
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.classList.contains('remove-ingredient-btn')) {
+        var container = document.getElementById('ingredientsContainer');
+        var rows = container.querySelectorAll('.ingredient-row');
+        if (rows.length > 1) {
+          e.target.closest('.ingredient-row').remove();
+        } else {
+          // If it's the only row, clear its values
+          var select = container.querySelector('select');
+          if (select) select.selectedIndex = 0;
+          var input = container.querySelector('input[type="text"]');
+          if (input) input.value = "";
+        }
+      }
+    });
+  </script>
+</body>
+</html>

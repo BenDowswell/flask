@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}View Recipe - {{ recipe.name }}{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h2>{{ recipe.name }}</h2>
+    <p>Added by: {{ recipe.username }} on {{ recipe.date_added }}</p>
+
+    <h3>Steps:</h3>
+    {% if recipe.steps %}
+      <ol>
+        {% for step in recipe.steps %}
+          <li>{{ step.description }}</li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p>No steps available for this recipe.</p>
+    {% endif %}
+
+    <h3>Ingredients ({{ recipe.ingredients|length }})</h3>
+    {% if recipe.ingredients %}
+      <ul>
+        {% for ingredient in recipe.ingredients %}
+          <li>{{ ingredient.name }} - {{ ingredient.quantity }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No ingredients available for this recipe.</p>
+    {% endif %}
+
+    <h3>Comments:</h3>
+    {% if recipe.comments %}
+      <ul>
+        {% for comment in recipe.comments %}
+          <li><strong>{{ comment.username or "Anonymous" }}</strong>: {{ comment.comment }} <em>({{ comment.date_added }})</em></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No comments yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}

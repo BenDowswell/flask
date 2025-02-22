@@ -1,0 +1,17 @@
+<!-- templates/profile.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile - Recipe App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  {% include 'base.html' %}
+  <div class="container mt-4">
+    <h2>Your Profile</h2>
+    <p>Welcome, {{ current_user }}!</p>
+    <!-- Additional profile details can be added here -->
+  </div>
+</body>
+</html>
