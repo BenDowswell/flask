@@ -2,11 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"
-    {% block head %}{% endblock %}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Recipe App{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    {% block body %}{% endblock %}
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Recipe App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="ingredientDropdown" role="button" data-bs-toggle="dropdown">
+                            Ingredients
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#ingredientModal">Add Ingredient</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('view_ingredients') }}">View Ingredients</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeIngredientModal">Remove Ingredient</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    
+    <!-- Remove Ingredient Modal -->
+    <div class="modal fade" id="removeIngredientModal" tabindex="-1" aria-labelledby="removeIngredientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="removeIngredientModalLabel">Remove Ingredient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="removeIngredientForm" method="POST" action="{{ url_for('remove_ingredient') }}">
+                        <div class="mb-3">
+                            <label for="ingredientSelect" class="form-label">Select Ingredient</label>
+                            <select class="form-control" id="ingredientSelect" name="ingredient_id" required>
+                                {% for ingredient in ingredients %}
+                                <option value="{{ ingredient.id }}">{{ ingredient.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-danger">Remove Ingredient</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+<!-- Ingredient Modal -->
+<div class="modal fade" id="ingredientModal" tabindex="-1" aria-labelledby="ingredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ingredientModalLabel">Add Ingredient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ingredientForm" method="POST" action="{{ url_for('add_ingredient') }}">
+                    <div class="mb-3">
+                        <label for="ingredientName" class="form-label">Ingredient Name</label>
+                        <input type="text" class="form-control" id="ingredientName" name="name" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Ingredient</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

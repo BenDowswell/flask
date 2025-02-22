@@ -1,35 +1,64 @@
-from flask import Flask, jsonify, request
+from flask import Flask, render_template, request, redirect, url_for
 from db import get_db_connection
 
 app = Flask(__name__)
 
-# Route to fetch all recipes
-@app.route('/recipes', methods=['GET'])
-def get_recipes():
+@app.route('/')
+def home():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name, instructions FROM recipes;")
-    recipes = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    recipe_list = [{"id": r[0], "name": r[1], "instructions": r[2]} for r in recipes]
-    return jsonify(recipe_list)
-
-# Route to fetch a recipe by ID
-@app.route('/recipe/<int:recipe_id>', methods=['GET'])
-def get_recipe(recipe_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id, name, instructions FROM recipes WHERE id = %s;", (recipe_id,))
-    recipe = cur.fetchone()
+    cur.execute("SELECT id, name FROM ingredients;")
+    ingredients = cur.fetchall()
     cur.close()
     conn.close()
 
-    if recipe:
-        return jsonify({"id": recipe[0], "name": recipe[1], "instructions": recipe[2]})
-    else:
-        return jsonify({"error": "Recipe not found"}), 404
+    ingredient_list = [{"id": i[0], "name": i[1]} for i in ingredients]
+    return render_template('home.html', ingredients=ingredient_list)
+
+@app.route('/add_ingredient', methods=['POST'])
+def add_ingredient():
+    ingredient_name = request.form.get('name')
+
+    if ingredient_name:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("INSERT INTO ingredients (name) VALUES (%s) ON CONFLICT (name) DO NOTHING;", (ingredient_name,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+    return redirect(url_for('home'))
+
+@app.route('/remove_ingredient', methods=['POST'])
+def remove_ingredient():
+    ingredient_id = request.form.get('ingredient_id')
+
+    if ingredient_id:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("DELETE FROM ingredients WHERE id = %s;", (ingredient_id,))
+            conn.commit()
+        finally:
+            cur.close()
+            conn.close()
+
+    return redirect(url_for('home'))
+
+@app.route('/ingredients')
+def view_ingredients():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM ingredients;")
+    ingredients = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    ingredient_list = [{"id": i[0], "name": i[1]} for i in ingredients]
+    return render_template('ingredients.html', ingredients=ingredient_list)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

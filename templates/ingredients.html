@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Ingredients - Recipe App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Available Ingredients</h1>
+    <ul class="list-group">
+        {% for ingredient in ingredients %}
+            <li class="list-group-item">{{ ingredient.name }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('home') }}" class="btn btn-primary mt-3">Back to Home</a>
+</div>
+{% endblock %}
