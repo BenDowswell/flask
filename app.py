@@ -36,6 +36,67 @@ def view_recipe(recipe_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Fetch recipe info (including the user who created it)
+    cur.execute("""
+        SELECT r.id, r.name, r.date_added, u.username
+        FROM recipes r
+        LEFT JOIN users u ON r.created_by = u.id
+        WHERE r.id = %s;
+    """, (recipe_id,))
+    recipe_row = cur.fetchone()
+    if not recipe_row:
+        cur.close()
+        conn.close()
+        return "Recipe not found", 404
+
+    recipe = {
+        "id": recipe_row[0],
+        "name": recipe_row[1],
+        "date_added": recipe_row[2],
+        "username": recipe_row[3]
+    }
+
+    # Fetch recipe ingredients from the join table
+    cur.execute("""
+        SELECT i.id, i.name, ri.quantity
+        FROM recipe_ingredients ri
+        JOIN ingredients i ON i.id = ri.ingredient_id
+        WHERE ri.recipe_id = %s;
+    """, (recipe_id,))
+    ingredients_data = cur.fetchall()
+    recipe["ingredients"] = [{"id": i[0], "name": i[1], "quantity": i[2]} for i in ingredients_data]
+
+    # Debug: Print the fetched ingredients to the console
+    print("Fetched ingredients for recipe", recipe_id, ":", recipe["ingredients"])
+
+    # (Optional: Fetch recipe steps and comments here)
+    cur.execute("""
+        SELECT step_number, description
+        FROM recipe_steps
+        WHERE recipe_id = %s
+        ORDER BY step_number;
+    """, (recipe_id,))
+    steps_data = cur.fetchall()
+    recipe["steps"] = [{"step_number": s[0], "description": s[1]} for s in steps_data]
+
+    cur.execute("""
+        SELECT c.id, c.comment, c.date_added, u.username
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.recipe_id = %s
+        ORDER BY c.date_added;
+    """, (recipe_id,))
+    comments_data = cur.fetchall()
+    recipe["comments"] = [{"id": c[0], "comment": c[1], "date_added": c[2], "username": c[3]} for c in comments_data]
+
+    cur.close()
+    conn.close()
+
+    return render_template('view_recipe.html', recipe=recipe)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
     # Fetch recipe info
     cur.execute("""
         SELECT r.id, r.name, r.date_added, u.username
@@ -76,7 +137,7 @@ def view_recipe(recipe_id):
     ingredients_data = cur.fetchall()
     recipe["ingredients"] = [{"id": i[0], "name": i[1], "quantity": i[2]} for i in ingredients_data]
 
-    # Fetch comments for the recipe
+    # Fetch comments
     cur.execute("""
         SELECT c.id, c.comment, c.date_added, u.username
         FROM comments c
@@ -94,11 +155,62 @@ def view_recipe(recipe_id):
 @app.route('/add_recipe', methods=['POST'])
 def add_recipe():
     name = request.form.get('name')
-    steps_text = request.form.get('steps')  # Newline-separated steps
-    # Ideally, get the user ID from the session. Here we assume it's passed via a hidden field.
+    steps_list = request.form.getlist('steps[]')
     created_by = request.form.get('user_id')
     
-    if not name or not steps_text:
+    # Debug prints
+    print("Recipe Name:", name)
+    print("Steps:", steps_list)
+    
+    if not name or not steps_list:
+        flash("Recipe name and steps are required.")
+        return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Insert recipe record and get its ID
+    cur.execute("INSERT INTO recipes (name, created_by) VALUES (%s, %s) RETURNING id;", (name, created_by))
+    recipe_id = cur.fetchone()[0]
+    conn.commit()
+    
+    # Insert each recipe step
+    for i, step in enumerate(steps_list, start=1):
+        cur.execute(
+            "INSERT INTO recipe_steps (recipe_id, step_number, description) VALUES (%s, %s, %s);",
+            (recipe_id, i, step)
+        )
+    
+    # Fetch ingredient IDs and quantities from the form
+    ingredient_ids = request.form.getlist('ingredient_ids[]')
+    ingredient_quantities = request.form.getlist('ingredient_quantities[]')
+    
+    # Debug prints for ingredients
+    print("Ingredient IDs:", ingredient_ids)
+    print("Ingredient Quantities:", ingredient_quantities)
+    
+    # Loop through provided ingredients and insert them into the join table
+    for ing_id, quantity in zip(ingredient_ids, ingredient_quantities):
+        # Only insert if a valid ingredient ID is provided (i.e., not an empty string)
+        if ing_id:
+            cur.execute(
+                "INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) VALUES (%s, %s, %s);",
+                (recipe_id, ing_id, quantity)
+            )
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    flash("Recipe added successfully.")
+    return redirect(url_for('view_recipe', recipe_id=recipe_id))
+
+    name = request.form.get('name')
+    # If multiple steps were added dynamically, they will be available as a list:
+    steps_list = request.form.getlist('steps[]')
+    created_by = request.form.get('user_id')
+    
+    if not name or not steps_list:
         flash("Recipe name and steps are required.")
         return redirect(url_for('home'))
     
@@ -109,13 +221,23 @@ def add_recipe():
     recipe_id = cur.fetchone()[0]
     conn.commit()
     
-    # Insert each recipe step
-    steps = [s.strip() for s in steps_text.splitlines() if s.strip()]
-    for i, step in enumerate(steps, start=1):
+    for i, step in enumerate(steps_list, start=1):
         cur.execute(
             "INSERT INTO recipe_steps (recipe_id, step_number, description) VALUES (%s, %s, %s);",
             (recipe_id, i, step)
         )
+    
+    # Process ingredient arrays:
+    ingredient_names = request.form.getlist('ingredient_names[]')
+    ingredient_quantities = request.form.getlist('ingredient_quantities[]')
+    for name, quantity in zip(ingredient_names, ingredient_quantities):
+        # Insert ingredient if it doesn't exist
+        cur.execute("INSERT INTO ingredients (name) VALUES (%s) ON CONFLICT (name) DO NOTHING;", (name,))
+        cur.execute("SELECT id FROM ingredients WHERE name = %s;", (name,))
+        ingredient_id = cur.fetchone()[0]
+        cur.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) VALUES (%s, %s, %s);",
+                    (recipe_id, ingredient_id, quantity))
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -232,8 +354,10 @@ def register():
         conn.commit()
         cur.close()
         conn.close()
+        
         session['user_id'] = user_id
         session['username'] = username
+        
         flash("Registration successful. Welcome, {}!".format(username))
         return redirect(url_for('home'))
     
@@ -255,12 +379,16 @@ def login():
         user = cur.fetchone()
         cur.close()
         conn.close()
+        
         if user is None or not check_password_hash(user[1], password):
             flash("Invalid username or password.")
             return redirect(url_for('login'))
         
         session['user_id'] = user[0]
         session['username'] = username
+        
+        print(f"User {username} (ID: {user[0]}) logged in successfully.")
+        
         flash("Login successful. Welcome back, {}!".format(username))
         return redirect(url_for('home'))
     
@@ -272,9 +400,38 @@ def logout():
     flash("You have been logged out.")
     return redirect(url_for('home'))
 
+@app.route('/profile')
+def profile():
+    # Ensure the user is logged in
+    if not session.get('user_id'):
+        flash("You need to log in to view your profile.")
+        return redirect(url_for('login'))
+    # For now, simply render a placeholder profile page
+    return render_template('profile.html')
+
 # -----------------------------
-# Find Recipes Endpoint (Optional)
+# Context Processors
 # -----------------------------
+@app.context_processor
+def inject_user():
+    current_user = session.get('username')
+    user_id = session.get('user_id')
+    return dict(current_user=current_user, user_id=user_id)
+
+@app.context_processor
+def inject_items():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM recipes;")
+    recipes_data = cur.fetchall()
+    cur.execute("SELECT id, name FROM ingredients;")
+    ingredients_data = cur.fetchall()
+    cur.close()
+    conn.close()
+    recipes = [{"id": r[0], "name": r[1]} for r in recipes_data]
+    ingredients = [{"id": i[0], "name": i[1]} for i in ingredients_data]
+    return dict(recipes=recipes, ingredients=ingredients)
+
 @app.route('/find_recipes', methods=['POST'])
 def find_recipes():
     data = request.get_json()
@@ -284,7 +441,6 @@ def find_recipes():
 
     conn = get_db_connection()
     cur = conn.cursor()
-    # Query for recipes where all required ingredients are available.
     query_full = """
         SELECT r.id, r.name
         FROM recipes r
@@ -296,7 +452,6 @@ def find_recipes():
     full_recipes_data = cur.fetchall()
     full_recipes = [{"id": r[0], "name": r[1]} for r in full_recipes_data]
 
-    # Query for recipes missing exactly one ingredient.
     query_missing = """
         SELECT r.id, r.name, COUNT(*) as total_required,
                COUNT(CASE WHEN ri.ingredient_id = ANY(%s) THEN 1 END) as available_count
@@ -311,7 +466,6 @@ def find_recipes():
     for row in missing_recipes_data:
         recipe_id = row[0]
         recipe_name = row[1]
-        # Retrieve missing ingredient details
         query_missing_ing = """
             SELECT i.id, i.name
             FROM ingredients i
@@ -326,30 +480,12 @@ def find_recipes():
                 "name": recipe_name,
                 "missing_ingredient": {"id": missing_ing[0], "name": missing_ing[1]}
             })
-
     cur.close()
     conn.close()
     return jsonify({
         "recipes_available": full_recipes,
         "recipes_missing": missing_recipes
     })
-
-# -----------------------------
-# Context Processor
-# -----------------------------
-@app.context_processor
-def inject_items():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT id, name FROM recipes;")
-    recipes_data = cur.fetchall()
-    cur.execute("SELECT id, name FROM ingredients;")
-    ingredients_data = cur.fetchall()
-    cur.close()
-    conn.close()
-    recipes = [{"id": r[0], "name": r[1]} for r in recipes_data]
-    ingredients = [{"id": i[0], "name": i[1]} for i in ingredients_data]
-    return dict(recipes=recipes, ingredients=ingredients)
 
 if __name__ == '__main__':
     app.run(debug=True)
