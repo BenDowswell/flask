@@ -1,91 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Recipe App{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Recipe App{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('home') }}">Recipe App</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="ingredientDropdown" role="button" data-bs-toggle="dropdown">
-                            Ingredients
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#ingredientModal">Add Ingredient</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('view_ingredients') }}">View Ingredients</a></li>
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeIngredientModal">Remove Ingredient</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
-    
-    <!-- Remove Ingredient Modal -->
-    <div class="modal fade" id="removeIngredientModal" tabindex="-1" aria-labelledby="removeIngredientModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="removeIngredientModalLabel">Remove Ingredient</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="removeIngredientForm" method="POST" action="{{ url_for('remove_ingredient') }}">
-                        <div class="mb-3">
-                            <label for="ingredientSelect" class="form-label">Select Ingredient</label>
-                            <select class="form-control" id="ingredientSelect" name="ingredient_id" required>
-                                {% for ingredient in ingredients %}
-                                <option value="{{ ingredient.id }}">{{ ingredient.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-danger">Remove Ingredient</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('home') }}">Recipe App</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+              aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav">
+          <!-- Home Link -->
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+          </li>
+          <!-- Recipes Section -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="recipesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Recipes
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="recipesDropdown">
+              <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addRecipeModal">
+                  Add Recipe
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('view_recipes') }}">
+                  View Recipes
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeRecipeModal">
+                  Remove Recipe
+                </a>
+              </li>
+            </ul>
+          </li>
+          <!-- Ingredients Section -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="ingredientsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Ingredients
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="ingredientsDropdown">
+              <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addIngredientModal">
+                  Add Ingredient
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('view_ingredients') }}">
+                  View Ingredients
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#removeIngredientModal">
+                  Remove Ingredient
+                </a>
+              </li>
+            </ul>
+          </li>
+          <!-- Account Section (Commented Out for Now) -->
+          <!--
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Account
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="{{ url_for('login') }}">Login</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
+            </ul>
+          </li>
+          -->
+        </ul>
+      </div>
     </div>
-    
+  </nav>
 
-<!-- Ingredient Modal -->
-<div class="modal fade" id="ingredientModal" tabindex="-1" aria-labelledby="ingredientModalLabel" aria-hidden="true">
+  <!-- Add Recipe Modal -->
+  <div class="modal fade" id="addRecipeModal" tabindex="-1" aria-labelledby="addRecipeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ingredientModalLabel">Add Ingredient</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('add_recipe') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addRecipeModalLabel">Add Recipe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Recipe Name -->
+            <div class="mb-3">
+              <label for="recipeName" class="form-label">Recipe Name</label>
+              <input type="text" class="form-control" id="recipeName" name="name" required>
             </div>
-            <div class="modal-body">
-                <form id="ingredientForm" method="POST" action="{{ url_for('add_ingredient') }}">
-                    <div class="mb-3">
-                        <label for="ingredientName" class="form-label">Ingredient Name</label>
-                        <input type="text" class="form-control" id="ingredientName" name="name" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Add Ingredient</button>
-                </form>
+            <!-- Recipe Steps -->
+            <div class="mb-3">
+              <label for="recipeSteps" class="form-label">Recipe Steps</label>
+              <textarea class="form-control" id="recipeSteps" name="steps" rows="5" placeholder="Enter one step per line" required></textarea>
             </div>
-        </div>
+            <!-- Hidden User Field (if logged in) -->
+            {% if current_user %}
+            <input type="hidden" name="user_id" value="{{ current_user.id }}">
+            {% endif %}
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Add Recipe</button>
+          </div>
+        </form>
+      </div>
     </div>
-</div>
+  </div>
 
-<div class="container mt-4">
+  <!-- Remove Recipe Modal -->
+  <div class="modal fade" id="removeRecipeModal" tabindex="-1" aria-labelledby="removeRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('remove_recipe') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="removeRecipeModalLabel">Remove Recipe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="recipeSelect" class="form-label">Select Recipe</label>
+              <select class="form-select" id="recipeSelect" name="recipe_id" required>
+                {% for recipe in recipes %}
+                  <option value="{{ recipe.id }}">{{ recipe.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">Delete Recipe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Ingredient Modal -->
+  <div class="modal fade" id="addIngredientModal" tabindex="-1" aria-labelledby="addIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('add_ingredient') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addIngredientModalLabel">Add Ingredient</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="ingredientName" class="form-label">Ingredient Name</label>
+              <input type="text" class="form-control" id="ingredientName" name="name" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Add Ingredient</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove Ingredient Modal -->
+  <div class="modal fade" id="removeIngredientModal" tabindex="-1" aria-labelledby="removeIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('remove_ingredient') }}">
+          <div class="modal-header">
+            <h5 class="modal-title" id="removeIngredientModalLabel">Remove Ingredient</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="ingredientSelect" class="form-label">Select Ingredient</label>
+              <select class="form-select" id="ingredientSelect" name="ingredient_id" required>
+                {% for ingredient in ingredients %}
+                  <option value="{{ ingredient.id }}">{{ ingredient.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">Delete Ingredient</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="container mt-4">
     {% block content %}{% endblock %}
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
